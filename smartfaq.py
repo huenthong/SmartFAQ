@@ -31,11 +31,21 @@ def find_answer(user_question, df, embeddings, model, threshold=0.7):
     # Ensure user_embedding is 2D
     user_embedding = np.array(user_embedding).reshape(1, -1)
     
-    # Debugging: Print shapes
+    # Debugging: Print shapes and types
+    print(f"user_embedding type: {type(user_embedding)}")
     print(f"user_embedding shape: {user_embedding.shape}")
-    print(f"embeddings shape: {embeddings.shape}")
+    print(f"user_embedding content: {user_embedding}")
     
-    similarities = cosine_similarity(user_embedding, embeddings)[0]
+    print(f"embeddings type: {type(embeddings)}")
+    print(f"embeddings shape: {embeddings.shape}")
+    print(f"embeddings content: {embeddings[:5]}")  # Print first 5 embeddings for brevity
+    
+    try:
+        similarities = cosine_similarity(user_embedding, embeddings)[0]
+    except ValueError as e:
+        print(f"Error in cosine_similarity: {e}")
+        return "There was an error processing your question. Please try again."
+    
     best_idx = np.argmax(similarities)
     best_similarity = similarities[best_idx]
     
@@ -68,4 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
