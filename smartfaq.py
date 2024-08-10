@@ -27,7 +27,15 @@ def load_model():
 # Find the most relevant answer
 def find_answer(user_question, df, embeddings, model, threshold=0.7):
     user_embedding = model.encode(user_question)
-    similarities = cosine_similarity([user_embedding], embeddings)[0]
+    
+    # Ensure user_embedding is 2D
+    user_embedding = np.array(user_embedding).reshape(1, -1)
+    
+    # Debugging: Print shapes
+    print(f"user_embedding shape: {user_embedding.shape}")
+    print(f"embeddings shape: {embeddings.shape}")
+    
+    similarities = cosine_similarity(user_embedding, embeddings)[0]
     best_idx = np.argmax(similarities)
     best_similarity = similarities[best_idx]
     
