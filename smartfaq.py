@@ -40,19 +40,15 @@ def find_answer(user_question, df, embeddings, model, threshold=0.7):
     print(f"embeddings shape: {embeddings.shape}")
     print(f"embeddings content: {embeddings[:5]}")  # Print first 5 embeddings for brevity
     
-    try:
-        similarities = cosine_similarity(user_embedding, embeddings)[0]
-    except ValueError as e:
-        print(f"Error in cosine_similarity: {e}")
-        return "There was an error processing your question. Please try again."
+    # Commented out the cosine_similarity call
+    # try:
+    #     similarities = cosine_similarity(user_embedding, embeddings)[0]
+    # except ValueError as e:
+    #     print(f"Error in cosine_similarity: {e}")
+    #     return "There was an error processing your question. Please try again."
     
-    best_idx = np.argmax(similarities)
-    best_similarity = similarities[best_idx]
-    
-    if best_similarity > threshold:
-        return df.iloc[best_idx]['Answer']
-    else:
-        return "I apologize, but I don't have information on that topic yet. Could you please ask other questions?"
+    # Temporary return for debugging
+    return "Debugging complete."
 
 # Streamlit app
 def main():
@@ -78,3 +74,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+  
+
+
+
