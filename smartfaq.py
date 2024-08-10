@@ -7,73 +7,61 @@ from sentence_transformers import SentenceTransformer
 
 openai.api_key =  st.secrets["mykey"]
 
-# Load the dataset and embeddings
-@st.cache_data
-def load_data_and_embeddings(file_path):
-    df = pd.read_csv(file_path)
-    
-    def parse_embedding(embedding_str):
-        return np.fromstring(embedding_str.strip('[]'), sep=' ')
-    
-    df['Question_Embedding'] = df['Question_Embedding'].apply(parse_embedding)
-    embeddings = np.stack(df['Question_Embedding'].values)
-    
-    return df, embeddings
+# Load the dataset
+df = pd.read_csv('qa_dataset_with_embeddings.csv')
+question_embeddings = np.array([eval(embedding) for embedding in df['Question_Embedding']])
 
-# Load the pre-trained embedding model
-def load_model():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+# Load the embedding model
+embedding_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
-# Find the most relevant answer
-def find_answer(user_question, df, embeddings, model, threshold=0.7):
-    user_embedding = model.encode(user_question)
+def get_most_relevant_answer(user_question, threshold=0.75):
+    # Generate an embedding for the user's question
+    user_question_embedding = embedding_model.encode([user_question])
+
+    # Calculate cosine similarities
+    similarities = cosine_similarity(user_question_embedding, question_embeddings)
     
-    # Ensure user_embedding is 2D
-    user_embedding = np.array(user_embedding).reshape(1, -1)
-    
-    # Debugging: Print shapes and types
-    print(f"user_embedding type: {type(user_embedding)}")
-    print(f"user_embedding shape: {user_embedding.shape}")
-    print(f"user_embedding content: {user_embedding}")
-    
-    print(f"embeddings type: {type(embeddings)}")
-    print(f"embeddings shape: {embeddings.shape}")
-    print(f"embeddings content: {embeddings[:5]}")  # Print first 5 embeddings for brevity
-    
-    # Commented out the cosine_similarity call
-    # try:
-    #     similarities = cosine_similarity(user_embedding, embeddings)[0]
-    # except ValueError as e:
-    #     print(f"Error in cosine_similarity: {e}")
-    #     return "There was an error processing your question. Please try again."
-    
-    # Temporary return for debugging
-    return "Debugging complete."
+    # Find the most similar question
+    max_similarity_idx = np.argmax(similarities)
+    max_similarity_score = similarities[0, max_similarity_idx]
 
-# Streamlit app
-def main():
-    st.title('Health Q&A Bot')
+    if max_similarity_score >= threshold:
+        answer = df.iloc[max_similarity_idx]['Answer']
+        return answer, max_similarity_score
+    else:
+        return None, None
 
-    file_path = 'qa_dataset_with_embeddings.csv'
-    df, embeddings = load_data_and_embeddings(file_path)
-    model = load_model()
+# Streamlit interface
+st.title("Health QA System")
 
-    st.write("Ask questions about heart, lung, and blood-related health topics:")
+# Text input for user question
+user_question = st.text_input("Ask a question about heart, lung, and blood-related health topics:")
 
-    user_question = st.text_input("Your question:")
-
-    if st.button("Get Answer"):
-        if user_question:
-            answer = find_answer(user_question, df, embeddings, model)
-            st.write(answer)
+if st.button("Get Answer"):
+    if user_question:
+        answer, similarity_score = get_most_relevant_answer(user_question)
+        if answer:
+            st.write(f"**Answer:** {answer}")
+            st.write(f"**Similarity Score:** {similarity_score:.2f}")
         else:
-            st.write("Please enter a question.")
+            st.write("I apologize, but I don't have information on that topic yet. Could you please ask other questions?")
+    else:
+        st.write("Please enter a question.")
 
-    if st.button("Clear"):
-        st.text_input("Your question:", value="", key="clear")
+if st.button("Clear"):
+    st.experimental_rerun()
 
-if __name__ == "__main__":
-    main()
+# Optional additional features
+st.subheader("Common FAQs")
+st.write("Here are some common questions you might find useful:")
+common_faqs = df['Question'].sample(5).values
+for faq in common_faqs:
+    st.write(f"- {faq}")
+
+st.subheader("Rate the answer")
+rating = st.slider("Was the answer helpful?", 1, 5, 3)
+st.write(f"Your rating: {rating}")
+
   
 
 
